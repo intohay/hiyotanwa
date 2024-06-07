@@ -17,6 +17,8 @@ pandas = "^2.2.2"
 simpleaudio = "^1.0.4"
 pygame = "^2.5.2"
 prompt-toolkit = "^3.0.46"
+janome = "^0.5.0"
+matplotlib = "^3.9.0"
 
 
 [build-system]
