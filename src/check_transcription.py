@@ -2,8 +2,6 @@ from pydub import AudioSegment
 import pygame
 import pandas as pd
 import os
-from prompt_toolkit import prompt
-from prompt_toolkit.document import Document
 from prompt_toolkit.shortcuts import PromptSession
 import textwrap
 pygame.init()
