@@ -2,6 +2,7 @@ import os
 from pydub import AudioSegment
 import shutil
 import subprocess
+
 # ffmpegがインストールされているディレクトリのパスを設定します
 AudioSegment.converter = "/opt/homebrew/bin/ffmpeg"
 
@@ -18,10 +19,10 @@ if not os.path.exists(output_folder):
 
 def has_audio_stream(file_path: str) -> bool:
 
-    command = [
+    command: list[str] = [
         "ffmpeg", "-i", file_path, "-map", "0:a:0", "-c", "copy", "-f", "null", "-"
     ]
-    result = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    result: subprocess.CompletedProcess[bytes] = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     return result.returncode == 0
 
