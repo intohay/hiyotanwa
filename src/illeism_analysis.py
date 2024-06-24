@@ -64,11 +64,11 @@ monthly_counts = df.groupby('month').agg({
 monthly_counts['illeism_ratio'] = monthly_counts['illeism_count'] / (monthly_counts['illeism_count'] + monthly_counts['firstperson_count'])
 
 
-start_period = '2022-01'
-end_period = '2024-05'
+# start_period = '2022-01'
+# end_period = '2024-05'
 
-# 指定期間のデータをフィルタリング
-monthly_counts = monthly_counts[(monthly_counts['month'] >= start_period) & (monthly_counts['month'] <= end_period)].reset_index(drop=True)
+# # 指定期間のデータをフィルタリング
+# monthly_counts = monthly_counts[(monthly_counts['month'] >= start_period) & (monthly_counts['month'] <= end_period)].reset_index(drop=True)
 
 # 月のラベルをフォーマット
 monthly_counts['month_str'] = monthly_counts['month'].dt.strftime('%y年%-m月')
@@ -82,7 +82,7 @@ min_month = monthly_counts.loc[monthly_counts['illeism_ratio'].idxmin(), 'month_
 
 # グラフを作成
 plt.figure(figsize=(10, 6))
-plt.plot(monthly_counts['month_str'], monthly_counts['illeism_ratio'], marker='o', linestyle='-', color='orange', linewidth=6, markersize=16)
+plt.plot(monthly_counts['month_str'], monthly_counts['illeism_ratio'], marker='o', linestyle='-', color='orange', linewidth=2, markersize=5)
 plt.title('濱岸ひよりの月ごとの再帰三人称の割合')
 plt.xlabel('月')
 plt.ylabel('再帰三人称の割合')
@@ -99,10 +99,10 @@ plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
 
 # x軸のラベルを間引いて表示
 xticks = monthly_counts['month_str']
-plt.xticks(xticks[::3], rotation=45, fontsize=20)  # 3か月ごとに表示
+plt.xticks(xticks[::3], rotation=45, fontsize=10)  # 3か月ごとに表示
 
 # y軸のラベルを太く表示
-plt.yticks(fontsize=20)
+plt.yticks(fontsize=10)
 
 plt.tight_layout()
 
