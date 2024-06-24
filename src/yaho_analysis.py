@@ -108,9 +108,7 @@ char_after_yaho_df.columns = ['date', 'total_char_after_yaho']
 # 平均感情スコアとやほ後文の文字数をマージ
 merged_df = pd.merge(avg_sentiments, char_after_yaho_df, on='date', how='inner')
 
-# save to csv
 
-merged_df.to_csv('merged.csv', index=False)
 
 # 「！」と「ー」が0個のときとそれ以上のときで感情スコアに差があるかを検定
 group_0 = merged_df[merged_df['total_char_after_yaho'] < 3]['avg_adjusted_sentiment_score']
