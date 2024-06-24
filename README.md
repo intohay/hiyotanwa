@@ -53,7 +53,7 @@ After checking the transcription results, you can analyze the illeism using the 
 python illeism_analysis.py
 ```
 
-The results of the analysis are shown on the display like this.
+The result of the analysis is shown on the display like this.
 
 ![hiyotanwa_2004-2405](https://github.com/root2116/hiyotanwa/assets/63008759/bf35d874-30d9-49a4-9c2b-e56769c93753)
 
