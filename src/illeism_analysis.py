@@ -13,7 +13,7 @@ input_csv: str = os.path.join(current_dir, "../data/hiyoritalk_transcribed_check
 
 df: pd.DataFrame = pd.read_csv(input_csv)
 
-illeism_list: list[str] = ["ひよたん", "ひよりさん", "ひよりっち", "ひより"]
+illeism_list: list[str] = ["ひよたん", "ひよりさん", "ひよりっち", "ひよりちゃん", "ひよりママ"]
 firstperson_list: list[str] = ["私", "わたし", "あたし"]
 
 
@@ -49,9 +49,13 @@ df = df.dropna(subset=['text'])
 df['illeism_count'] = df['text'].apply(count_illeism)
 df['firstperson_count'] = df['text'].apply(count_firstperson)
 
+
 # dateフィールドをdatetime型に変換し、月ごとに集計
 df['date'] = pd.to_datetime(df['date'], format='%Y-%m%d-%H%M%S')
 df['month'] = df['date'].dt.to_period('M')
+
+
+
 
 # 月ごとのilleismとfirstpersonの合計を計算
 monthly_counts = df.groupby('month').agg({
@@ -107,4 +111,76 @@ plt.yticks(fontsize=10)
 plt.tight_layout()
 
 # グラフを表示
+plt.show()
+
+
+
+
+
+from filterpy.kalman import KalmanFilter
+import numpy as np
+import matplotlib.dates as mdates
+
+df['date_str'] = df['date'].dt.strftime('%Y-%m-%d')
+
+daily_counts = df.groupby('date_str').agg({
+    'illeism_count': 'sum',
+    'firstperson_count': 'sum'
+}).reset_index()
+
+# 日毎のilleismの割合を計算
+daily_counts['illeism_ratio'] = daily_counts['illeism_count'] / (daily_counts['illeism_count'] + daily_counts['firstperson_count'])
+
+print(len(daily_counts))
+
+# カルマンフィルタの初期化
+kf = KalmanFilter(dim_x=1, dim_z=1)
+kf.x = np.array([[0.7]])  # 初期確率の推定値 (例: 0.5)
+kf.F = np.array([[1]])    # 状態遷移行列
+kf.H = np.array([[1]])    # 観測モデル
+kf.P = np.array([[1]])    # 推定誤差共分散行列の初期値
+kf.R = np.array([[0.1]])  # 観測ノイズの分散
+kf.Q = np.array([[0.01]]) # プロセスノイズの分散
+
+# 推定結果を保存するリスト
+estimated_probabilities = []
+no_observation_days = []  # 観測がなかった日のインデックスを保存
+
+
+# カルマンフィルタによる逐次推定とベースライン計算
+for i, row in daily_counts.iterrows():
+    if row['illeism_count'] + row['firstperson_count'] > 0:  # 観測がある日のみ更新
+        daily_average = row['illeism_ratio']  # その日の「私」の使用割合
+        kf.predict()  # 予測ステップを行う
+        kf.update(np.array([[daily_average]]))
+        
+    else:
+        # 観測がない日: 推定値をそのまま保持し、予測ステップをスキップ
+        no_observation_days.append(i)
+    
+    # 現在の推定値を保存
+    estimated_probabilities.append(kf.x[0, 0])
+
+
+
+# グラフの描画
+plt.figure(figsize=(20, 7))  # 横長のグラフに調整
+
+# 日付をdatetimeに変換してプロット
+daily_counts['date'] = pd.to_datetime(daily_counts['date_str'])
+plt.plot(daily_counts['date'], estimated_probabilities, label="Kalman Filter Estimate", color='orange')
+
+# x軸のフォーマットを設定
+plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%y年%-m月'))
+plt.gca().xaxis.set_major_locator(mdates.MonthLocator(interval=3))  # 月ごとのラベルを設定
+plt.gcf().autofmt_xdate(rotation=45)  # x軸のラベルを45度傾ける
+
+plt.xlabel("月")
+plt.ylabel("確率")
+plt.ylim(0, 1)
+plt.title("濱岸ひよりの再帰三人称の推定使用確率の推移")
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
 plt.show()
