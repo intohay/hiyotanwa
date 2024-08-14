@@ -51,8 +51,8 @@ df['firstperson_count'] = df['text'].apply(count_firstperson)
 
 
 # dateフィールドをdatetime型に変換し、月ごとに集計
-df['date'] = pd.to_datetime(df['date'], format='%Y-%m%d-%H%M%S')
-df['month'] = df['date'].dt.to_period('M')
+df['datetime'] = pd.to_datetime(df['date'], format='%Y-%m%d-%H%M%S')
+df['month'] = df['datetime'].dt.to_period('M')
 
 
 
@@ -87,7 +87,7 @@ min_month = monthly_counts.loc[monthly_counts['illeism_ratio'].idxmin(), 'month_
 # グラフを作成
 plt.figure(figsize=(10, 6))
 plt.plot(monthly_counts['month_str'], monthly_counts['illeism_ratio'], marker='o', linestyle='-', color='orange', linewidth=2, markersize=5)
-plt.title('濱岸ひよりの月ごとの再帰三人称の割合')
+plt.title('濱岸ひよりの月ごとの再帰三人称の割合の推移')
 plt.xlabel('月')
 plt.ylabel('再帰三人称の割合')
 plt.grid(True)
@@ -116,24 +116,39 @@ plt.show()
 
 
 
-
+import pandas as pd
 from filterpy.kalman import KalmanFilter
 import numpy as np
 import matplotlib.dates as mdates
 
-df['date_str'] = df['date'].dt.strftime('%Y-%m-%d')
+# datetimeから日付のみを取り出す
+df['date'] = df['datetime'].dt.date
 
-daily_counts = df.groupby('date_str').agg({
+daily_counts = df.groupby('date', as_index=False).agg({
     'illeism_count': 'sum',
     'firstperson_count': 'sum'
 }).reset_index()
 
-# 日毎のilleismの割合を計算
-daily_counts['illeism_ratio'] = daily_counts['illeism_count'] / (daily_counts['illeism_count'] + daily_counts['firstperson_count'])
 
-print(len(daily_counts))
+daily_counts['date'] = pd.to_datetime(daily_counts['date'])
+# 日付をインデックスに設定
+daily_counts.set_index('date', inplace=True)
 
-# カルマンフィルタの初期化
+
+
+
+
+# 週ごとにデータをリサンプリング（週の始まりは月曜日）
+weekly_counts = daily_counts.resample('W-MON', label='left', closed='left').sum()
+
+# インデックスをリセットして 'date' 列として扱う
+weekly_counts.reset_index(inplace=True)
+
+# 週毎のilleismの割合を計算
+weekly_counts['illeism_ratio'] = weekly_counts['illeism_count'] / (weekly_counts['illeism_count'] + weekly_counts['firstperson_count'])
+
+
+# # カルマンフィルタの初期化
 kf = KalmanFilter(dim_x=1, dim_z=1)
 kf.x = np.array([[0.7]])  # 初期確率の推定値 (例: 0.5)
 kf.F = np.array([[1]])    # 状態遷移行列
@@ -148,11 +163,11 @@ no_observation_days = []  # 観測がなかった日のインデックスを保�
 
 
 # カルマンフィルタによる逐次推定とベースライン計算
-for i, row in daily_counts.iterrows():
+for i, row in weekly_counts.iterrows():
     if row['illeism_count'] + row['firstperson_count'] > 0:  # 観測がある日のみ更新
-        daily_average = row['illeism_ratio']  # その日の「私」の使用割合
+        weekly_average = row['illeism_ratio']  # その日の「私」の使用割合
         kf.predict()  # 予測ステップを行う
-        kf.update(np.array([[daily_average]]))
+        kf.update(np.array([[weekly_average]]))
         
     else:
         # 観測がない日: 推定値をそのまま保持し、予測ステップをスキップ
@@ -166,21 +181,24 @@ for i, row in daily_counts.iterrows():
 # グラフの描画
 plt.figure(figsize=(20, 7))  # 横長のグラフに調整
 
-# 日付をdatetimeに変換してプロット
-daily_counts['date'] = pd.to_datetime(daily_counts['date_str'])
-plt.plot(daily_counts['date'], estimated_probabilities, label="Kalman Filter Estimate", color='orange')
+
+plt.plot(weekly_counts['date'], estimated_probabilities, label="Kalman Filter Estimate", color='darkorange')
 
 # x軸のフォーマットを設定
 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%y年%-m月'))
 plt.gca().xaxis.set_major_locator(mdates.MonthLocator(interval=3))  # 月ごとのラベルを設定
-plt.gcf().autofmt_xdate(rotation=45)  # x軸のラベルを45度傾ける
+plt.gcf().autofmt_xdate(rotation=45, ha='center')  # x軸のラベルを45度傾ける
+
+# y軸に補助線を追加
+plt.gca().yaxis.set_major_locator(mticker.MultipleLocator(0.1))
+plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
 
 plt.xlabel("月")
 plt.ylabel("確率")
 plt.ylim(0, 1)
 plt.title("濱岸ひよりの再帰三人称の推定使用確率の推移")
 plt.legend()
-plt.grid(True)
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
 
 plt.tight_layout()
 plt.show()
