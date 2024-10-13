@@ -121,6 +121,18 @@ from filterpy.kalman import KalmanFilter
 import numpy as np
 import matplotlib.dates as mdates
 
+special_dates = [{'date': pd.to_datetime('2020-09-28'), 'label': '18歳の誕生日'}, 
+                 {'date': pd.to_datetime('2021-09-28'), 'label': '19歳の誕生日'}, 
+                 {'date': pd.to_datetime('2022-01-01'), 'label': '2022年　元日'},
+                 {'date': pd.to_datetime('2022-09-28'), 'label': '20歳の誕生日　一人称を私にすると宣言'}, 
+                 {'date': pd.to_datetime('2023-01-01'), 'label': '2023年　元日'},
+                 {'date': pd.to_datetime('2023-06-02'), 'label': 'SRで一人称を私にすると宣言'}, 
+                 {'date': pd.to_datetime('2023-08-23'), 'label': 'ト|クで一人称を私に変えようとしていることを報告'}, 
+                 {'date': pd.to_datetime('2023-09-28'), 'label': '21歳の誕生日　一人称を私にすることを抱負に'}, 
+                 {'date': pd.to_datetime('2023-12-24'), 'label': '私が本人にこのグラフを見せる'},
+                 {'date': pd.to_datetime('2024-01-01'), 'label': '2024年　元日'},
+                 {'date': pd.to_datetime('2024-06-09'), 'label': '私が本人にこのグラフを見せる'}]
+
 # datetimeから日付のみを取り出す
 df['date'] = df['datetime'].dt.date
 
@@ -176,13 +188,26 @@ for i, row in weekly_counts.iterrows():
     # 現在の推定値を保存
     estimated_probabilities.append(kf.x[0, 0])
 
-
+# 縦書き用にテキストを改行で分割
+def to_vertical_text(text):
+    return "\n".join(text)
 
 # グラフの描画
 plt.figure(figsize=(20, 7))  # 横長のグラフに調整
 
 
 plt.plot(weekly_counts['date'], estimated_probabilities, label="Kalman Filter Estimate", color='darkorange')
+
+
+for i, event in enumerate(special_dates):
+    plt.axvline(x=event['date'], color='red', linestyle='--', linewidth=1)
+
+    if i == 9:
+        plt.text(event['date'] + pd.Timedelta(days=3), 0.6, to_vertical_text(event['label']), color='red', 
+                 verticalalignment='top', horizontalalignment='left', fontsize=10)
+    else:
+        plt.text(event['date'] - pd.Timedelta(days=3), 0.6, to_vertical_text(event['label']), color='red', 
+                verticalalignment='top', horizontalalignment='right', fontsize=10)
 
 # x軸のフォーマットを設定
 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%y年%-m月'))

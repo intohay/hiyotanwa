@@ -27,6 +27,9 @@ unidic-lite = "^1.0.8"
 scipy = "^1.13.1"
 filterpy = "^1.4.5"
 scikit-learn = "^1.5.1"
+instaloader = "^4.13.1"
+umap-learn = "^0.5.6"
+hdbscan = "^0.8.39"
 
 
 [build-system]

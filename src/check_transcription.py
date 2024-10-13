@@ -10,10 +10,12 @@ pygame.init()
 input_csv: str = "data/hiyoritalk_transcribed.csv"
 output_csv: str = "data/hiyoritalk_transcribed_checked.csv"
 
+input_df: pd.DataFrame = pd.read_csv(input_csv)
+
 if os.path.exists(output_csv):
     df: pd.DataFrame = pd.read_csv(output_csv)
 else:
-    df: pd.DataFrame = pd.read_csv(input_csv)
+    df: pd.DataFrame = input_df.copy()
 
 def wrap_text(text: str, width: int = 80) -> str:
     return "\n".join(textwrap.wrap(text, width))
@@ -23,6 +25,9 @@ def wrap_text(text: str, width: int = 80) -> str:
 if "checked" not in df.columns:
     df["checked"] = False
 
+new_rows = input_df[~input_df.index.isin(df.index)]
+new_rows["checked"] = False
+df = pd.concat([df, new_rows])
 
 session: PromptSession = PromptSession()
 
